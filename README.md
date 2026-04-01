@@ -1,6 +1,6 @@
 # Claude Code for Applied Microeconomics
 
-A Claude Code configuration built for applied economists doing empirical research. Includes referee agents calibrated to 14 economics journals, a knowledge management architecture, Stata and LaTeX hooks, and lessons learned from hundreds of hours of AI-assisted research.
+A Claude Code configuration built for applied economists doing empirical research. Includes a knowledge management architecture, Stata and LaTeX hooks, and lessons learned from hundreds of hours of AI-assisted research.
 
 **Author:** Larry Santucci, Federal Reserve Bank of Philadelphia
 
@@ -12,8 +12,6 @@ A Claude Code configuration built for applied economists doing empirical researc
 
 | Component | What it does |
 |-----------|-------------|
-| **3 referee agents** | Domain referee, methods referee, and code auditor — run blind parallel reviews of your paper or code |
-| **14 journal profiles** | Calibrate referee behavior to specific journals (AER through JCA) |
 | **Domain profile** | Field-specific calibration for consumer finance/banking (use as a template for your field) |
 | **3 skills** | `/review-draft` (simulated peer review), `/review-paper` (structured paper notes), `/revise` (R&R triage) |
 | **7 hooks** | Stata error detection, log archiving, LaTeX auto-compile, destructive command blocking, file backup, large-file warnings, desktop notifications |
