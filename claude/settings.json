@@ -1,0 +1,99 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Read",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "FILE_PATH=$(echo \"$TOOL_INPUT\" | python3 -c \"import sys,json; print(json.load(sys.stdin).get('file_path',''))\" 2>/dev/null); if [ -n \"$FILE_PATH\" ] && [ -f \"$FILE_PATH\" ]; then SIZE=$(wc -c < \"$FILE_PATH\"); if [ \"$SIZE\" -gt 500000 ]; then echo \"WARNING: File $(basename \"$FILE_PATH\") is $(( SIZE / 1024 ))KB. Consider reading specific sections (offset/limit) or converting to text first.\"; fi; fi"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "FILE_PATH=$(echo \"$TOOL_INPUT\" | python3 -c \"import sys,json; print(json.load(sys.stdin).get('file_path',''))\" 2>/dev/null); if [ -n \"$FILE_PATH\" ] && [ -f \"$FILE_PATH\" ]; then cp \"$FILE_PATH\" \"${FILE_PATH}.bak.$(date +%Y%m%d_%H%M%S)\"; fi",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "CMD=$(echo \"$TOOL_INPUT\" | python3 -c \"import sys,json; print(json.load(sys.stdin).get('command',''))\" 2>/dev/null); if echo \"$CMD\" | grep -qE 'git\\s+reset\\s+--hard|git\\s+push\\s+(-f|--force)|rm\\s+-rf\\s+/|git\\s+checkout\\s+--\\s+\\.|git\\s+clean\\s+-f|git\\s+branch\\s+-D'; then echo \"BLOCKED: Destructive command detected: $CMD\" >&2; exit 2; fi; if echo \"$CMD\" | grep -qE 'git\\s+commit.*--no-verify'; then echo \"BLOCKED: --no-verify not allowed\" >&2; exit 2; fi",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "CMD=$(echo \"$TOOL_INPUT\" | python3 -c \"import sys,json; print(json.load(sys.stdin).get('command',''))\" 2>/dev/null); if echo \"$CMD\" | grep -q 'stata-mp'; then ERRORS=$(echo \"$TOOL_OUTPUT\" | grep -E 'r\\([0-9]+\\)|no observations|variable .* not found|op\\. sys\\. refuses|unable to allocate|matsize too small|no; data in memory would be lost' 2>/dev/null); if [ -n \"$ERRORS\" ]; then echo \"STATA VALIDATION WARNING:\"; echo \"$ERRORS\"; fi; fi"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "CMD=$(echo \"$TOOL_INPUT\" | python3 -c \"import sys,json; print(json.load(sys.stdin).get('command',''))\" 2>/dev/null); if echo \"$CMD\" | grep -q 'stata-mp'; then LOG=$(echo \"$CMD\" | grep -oP '(?<=do )\\S+' | sed 's/\\.do$/.log/'); if [ -n \"$LOG\" ] && [ -f \"$LOG\" ]; then cp \"$LOG\" \"${LOG%.log}_$(date +%Y%m%d_%H%M%S).log\"; fi; fi",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "FILE_PATH=$(echo \"$TOOL_INPUT\" | python3 -c \"import sys,json; print(json.load(sys.stdin).get('file_path',''))\" 2>/dev/null); if echo \"$FILE_PATH\" | grep -qE '\\.tex$'; then cd \"$(dirname \"$FILE_PATH\")\" && pdflatex -interaction=nonstopmode -halt-on-error \"$(basename \"$FILE_PATH\")\" > /dev/null 2>&1; if [ $? -ne 0 ]; then echo \"WARNING: LaTeX compilation failed for $(basename \"$FILE_PATH\")\"; fi; fi",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "matcher": "permission_prompt",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "notify-send 'Claude Code' 'Waiting for your input' 2>/dev/null || true"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "notify-send 'Claude Code' 'Task finished' 2>/dev/null || true"
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "notify-send 'Claude Code' 'Subagent finished' 2>/dev/null || true"
+          }
+        ]
+      }
+    ]
+  }
+}
