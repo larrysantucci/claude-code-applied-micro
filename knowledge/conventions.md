@@ -24,6 +24,17 @@ Do this BEFORE writing any code. This prevents discovering unreported options la
 - Show diffs before running anything destructive
 - Prefer editing existing files over creating new ones
 
+## Project Workflow Map
+Every project should have a visual workflow map (`docs/workflow_map.html`) that serves as a shared vocabulary between the user and Claude. The map shows who did what, with what data, in what order, and where workstreams intersect for validation.
+
+**Joining an existing project:** Before any analytical work, review all project documentation (docs/, code/, README, email chains, presentations) and construct the workflow map. Ask the user targeted questions to fill gaps. This is an onboarding prerequisite, not an optional artifact.
+
+**Starting a new project:** Begin with a minimal workflow map. Update it incrementally as the project evolves — new phases, data sources, estimation approaches, and validation points get added as they occur.
+
+**Using the map:** Reference workflow map locations when discussing tasks (e.g., "Phase 4 / Person-Level Estimation / Broadband Heterogeneity"). This prevents ambiguity about what we're working on and where it fits.
+
+**Format:** Self-contained HTML with color-coded cards per researcher track. Phases are chronological. Cards name specific do-files and data files. Pivot points and validation links are marked explicitly.
+
 ## Knowledge Management
 - Every fact lives in exactly one place (the project knowledge repo)
 - Paper notes are pure summaries — project implications go in the relevant topic file
