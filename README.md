@@ -12,8 +12,6 @@ A Claude Code configuration built for applied economists doing empirical researc
 
 | Component | What it does |
 |-----------|-------------|
-| **3 referee agents** | Domain referee, methods referee, and code auditor — run blind parallel reviews of your paper or code |
-| **14 journal profiles** | Calibrate referee behavior to specific journals (AER through JCA) |
 | **Domain profile** | Field-specific calibration for consumer finance/banking (use as a template for your field) |
 | **2 skills** | `/review-paper` (structured paper notes), `/scope` (autonomy control — throttle how much Claude does before checking in) |
 | **7 hooks** | Stata error detection, log archiving, LaTeX auto-compile, destructive command blocking, file backup, large-file warnings, desktop notifications |
