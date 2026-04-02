@@ -1,6 +1,6 @@
 # Claude Code for Applied Microeconomics
 
-A framework for using Claude Code in empirical economic research. Includes a knowledge architecture, process conventions, and lessons learned from hundreds of hours of AI-assisted research — plus a directory of community-built agents, skills, and tools you should know about.
+A Claude Code configuration built for applied economists doing empirical research. Includes referee agents calibrated to 14 economics journals, a knowledge management architecture, Stata and LaTeX hooks, and lessons learned from hundreds of hours of AI-assisted research.
 
 **Author:** Larry Santucci, Federal Reserve Bank of Philadelphia
 
@@ -12,13 +12,13 @@ A framework for using Claude Code in empirical economic research. Includes a kno
 
 | Component | What it does |
 |-----------|-------------|
-| **Knowledge architecture** | Three-layer system for organizing what Claude knows: behavioral guardrails, knowledge repositories, session memory |
-| **Process conventions** | Verification doctrine, code conventions, knowledge management rules, subsampling protocols |
-| **Lessons learned** | Hard-won debugging insights: subsampling bugs, memory crashes, inherited assumptions, pre-trends interpretation |
-| **Stata patterns** | Technical notes for csdid, ivreghdfe, and general Stata gotchas |
-| **Methods library** | Staggered DiD setup, IV diagnostics, pre-trends protocol, weight construction |
+| **3 referee agents** | Domain referee, methods referee, and code auditor — run blind parallel reviews of your paper or code |
+| **14 journal profiles** | Calibrate referee behavior to specific journals (AER through JCA) |
+| **Domain profile** | Field-specific calibration for consumer finance/banking (use as a template for your field) |
+| **2 skills** | `/review-paper` (structured paper notes), `/scope` (autonomy control — throttle how much Claude does before checking in) |
 | **7 hooks** | Stata error detection, log archiving, LaTeX auto-compile, destructive command blocking, file backup, large-file warnings, desktop notifications |
-| **Community directory** | Curated guide to economist Claude Code repos, skills, agents, hooks, and educational resources |
+| **Knowledge base** | Cross-project patterns: Stata technical notes, methods library, process conventions, debugging lessons |
+| **Beamer presentation** | Slides explaining the three-layer knowledge architecture ([PDF](docs/knowledge-architecture.pdf)) |
 
 ---
 
@@ -30,6 +30,7 @@ Three principles guide this setup:
 
 2. **Knowledge management.** Every fact lives in exactly one place. Three layers: behavioral guardrails (`CLAUDE.md`), knowledge repositories (`docs/knowledge/`), and session memory (`MEMORY.md`). No information scatter.
 
+3. **Field calibration.** Generic AI assistants don't know your field's conventions. The domain profile and journal profiles teach Claude what referees in your subfield actually care about.
 
 ---
 
@@ -49,17 +50,79 @@ cp -r .claude/* ~/.claude/
 cp -r knowledge/* ~/claude-knowledge/
 ```
 
-### 2. Set up a project
+### 2. Customize for your field
+
+The domain profile (`~/.claude/rules/domain-profile.md`) is a worked example for consumer finance/banking. **Copy it and adapt for your field:**
+
+- Replace the datasets table with your field's common data sources
+- Replace the identification strategies with those used in your subfield
+- Replace the seminal references
+- Replace the field-specific referee concerns
+
+The journal profiles (`~/.claude/rules/journal-profiles.md`) cover 14 applied economics journals. Add your target journals using the template at the bottom of the file.
+
+### 3. Set up a project
 
 Create a project-level `CLAUDE.md` in your project directory. See `examples/project-CLAUDE.md` for a template.
 
-### 3. Add agents and skills
+### 4. Try a review
 
-This repo provides the framework — the knowledge architecture and process conventions. For agents and skills (referee reviewers, paper summarizers, robustness checkers, etc.), see the community resources below. The ecosystem is rich, and several excellent implementations are freely available.
+```
+/review-draft --peer AEJ:Applied
+```
+
+This launches the domain referee and methods referee in parallel, both calibrated to AEJ:Applied's standards. They run blind — neither sees the other's report.
 
 ---
 
 ## Components
+
+### Referee Agents
+
+Three agents in `.claude/agents/`:
+
+| Agent | Role | Reads |
+|-------|------|-------|
+| `domain-referee` | Literature, contribution, external validity, journal fit | domain-profile.md, journal-profiles.md |
+| `methods-referee` | Identification, estimation, inference, robustness | methods_library.md, lessons.md, domain-profile.md |
+| `coder-critic` | Code audit: design drift, verification, conventions | conventions.md, lessons.md, stata_patterns.md |
+
+All three produce severity-ranked issue lists (Critical / Important / Minor), not numeric scores. The domain and methods referees are blind to each other.
+
+### Journal Profiles
+
+14 journals with calibrated referee behavior:
+
+| Tier | Journals |
+|------|----------|
+| Top-5 | AER, JPE, QJE, REStud, Econometrica |
+| Top field | AEJ:Applied, AEJ:Policy, JHR, RAND, JPubE, JME, JFI |
+| Strong field / specialty | JBF, JFSR, JUE, RESTAT, JCA |
+
+Each profile specifies: focus, bar, how domain and methods referees should adjust, and typical referee concerns. When you run `/review-draft --peer JHR`, the referees calibrate to JHR's expectations.
+
+### Hooks
+
+7 hooks in `settings.json`:
+
+| Hook | Trigger | What it does |
+|------|---------|-------------|
+| Large file warning | PreToolUse: Read | Warns when reading files >500KB |
+| Auto-backup | PreToolUse: Edit/Write | Creates timestamped backup before any file edit |
+| Destructive command blocker | PreToolUse: Bash | Blocks `git reset --hard`, `rm -rf /`, `--no-verify`, etc. |
+| Stata error detector | PostToolUse: Bash | Catches `r(...)` errors, "no observations", "variable not found" after Stata runs |
+| Stata log archiver | PostToolUse: Bash | Auto-copies timestamped log after every Stata run |
+| LaTeX auto-compile | PostToolUse: Edit/Write | Runs pdflatex after any .tex file is edited |
+| Desktop notifications | Notification/Stop/SubagentStop | Alerts when waiting for input or when tasks finish |
+
+### Skills
+
+| Skill | Usage | What it does |
+|-------|-------|-------------|
+| `/review-paper` | `<path-to-paper>` | Extract structured notes from someone else's paper |
+| `/scope` | `full`, `moderate`, `limited` | Control how much Claude does before stopping to check in. Default is `limited`. See [SKILL.md](.claude/skills/scope/SKILL.md). |
+
+For simulated peer review (`/review-draft`) and R&R triage (`/revise`), see [Scott Cunningham's MixtapeTools](https://github.com/scunning1975/MixtapeTools).
 
 ### Knowledge Architecture
 
@@ -92,84 +155,33 @@ The `MEMORY.md` file is an index — one line per entry, under 150 characters. E
 
 The **mandatory pre-action feedback review** is the enforcement mechanism: before any non-read action, Claude must verify that no feedback memory is violated. This costs ~200 tokens per check — trivial compared to the 5,000–15,000 tokens a preventable error costs in rework.
 
-### Process Conventions & Lessons
-
-The knowledge base (`knowledge/`) contains cross-project patterns built from real research experience:
-
-| File | What you'll find |
-|------|-----------------|
-| `conventions.md` | Verification doctrine, code conventions, knowledge management, subsampling rules |
-| `lessons.md` | 14 hard-won debugging lessons — subsampling bugs, memory crashes, pre-trends direction, data availability, inherited restrictions |
-| `stata_patterns.md` | csdid memory limits, saverif() path bug, estat ordering, ivreghdfe usage |
-| `methods_library.md` | CSDID setup checklist, IV diagnostics, pre-trends protocol, weight construction |
-
-### Hooks
-
-7 hooks in `settings.json`:
-
-| Hook | Trigger | What it does |
-|------|---------|-------------|
-| Large file warning | PreToolUse: Read | Warns when reading files >500KB |
-| Auto-backup | PreToolUse: Edit/Write | Creates timestamped backup before any file edit |
-| Destructive command blocker | PreToolUse: Bash | Blocks `git reset --hard`, `rm -rf /`, `--no-verify`, etc. |
-| Stata error detector | PostToolUse: Bash | Catches `r(...)` errors, "no observations", "variable not found" after Stata runs |
-| Stata log archiver | PostToolUse: Bash | Auto-copies timestamped log after every Stata run |
-| LaTeX auto-compile | PostToolUse: Edit/Write | Runs pdflatex after any .tex file is edited |
-| Desktop notifications | Notification/Stop/SubagentStop | Alerts when waiting for input or when tasks finish |
-
----
-
-## Community Agents, Skills & Tools
-
-This repo does not include agents or skills. The community has built excellent ones. Here's what we recommend, based on our experience reviewing and testing them.
-
-For a comprehensive directory with descriptions, links, and cross-references, see [`knowledge/economist_claude_code_repos.md`](knowledge/economist_claude_code_repos.md).
-
-### Full Workflow Templates
-
-If you want a complete drop-in setup with agents, skills, hooks, and rules:
-
-| Repo | Author | What it offers |
-|------|--------|----------------|
-| [pedrohcgs/claude-code-my-workflow](https://github.com/pedrohcgs/claude-code-my-workflow) | Pedro Sant'Anna | The flagship template (821+ stars). 7 hooks, 10 agents, 22 skills, 18 rules, full settings.json. The [guide on his website](https://psantanna.com/claude-code-my-workflow/) is the best starting point for any economist new to Claude Code. |
-| [hugosantanna/clo-author](https://github.com/hugosantanna/clo-author) | Hugo Sant'Anna | Reoriented for empirical paper writing. 18 agents (worker-critic pairs), 30 journal profiles, strategy memo workflow. See [hsantanna.org/clo-author](https://hsantanna.org/clo-author/). |
-| [scunning1975/MixtapeTools](https://github.com/scunning1975/MixtapeTools) | Scott Cunningham | Creative skill designs including the "fletcher" defamiliarization audit and the "referee2" independent 5-audit protocol. His [6-part Substack series](https://causalinf.substack.com/p/claude-code-changed-how-i-work-part) is essential reading. |
-| [chrisblattman/claudeblattman](https://github.com/chrisblattman/claudeblattman) | Chris Blattman | 14+ skills across 7 categories (analysis, data, theory, writing, communication, literature, ideation). See [claudeblattman.com](https://claudeblattman.com/). |
-
-### Agents & Skills Worth Examining
-
-| What | Where | Why it's interesting |
-|------|-------|---------------------|
-| Parallel paper review (6 agents) | [claesbackman/AI-research-feedback](https://github.com/claesbackman/AI-research-feedback) | Most thorough automated review setup |
-| DiD + IV robustness skill | [zirui-song/claude-skills](https://github.com/zirui-song/claude-skills) | Field-specific robustness checklist |
-| Stata syntax reference skill | [dylantmoore/stata-skill](https://github.com/dylantmoore/stata-skill) | Stata-specific knowledge |
-| Curated skill collection (18+) | [meleantonio/awesome-econ-ai-stuff](https://meleantonio.github.io/awesome-econ-ai-stuff/) | Broad coverage: Stata, R, Python, Beamer, visualization |
-| "fletcher" defamiliarization audit | [scunning1975/MixtapeTools](https://github.com/scunning1975/MixtapeTools) | Forces you to question assumptions via structured protocol |
-| "referee2" independent 5-audit | [scunning1975/MixtapeTools](https://github.com/scunning1975/MixtapeTools) | Key principle: "the Claude that built the pipeline cannot objectively audit it" |
-
-### Infrastructure
-
-| What | Where | Why it matters |
-|------|-------|---------------|
-| Docker for YOLO mode | [paulgp/claude-container](https://github.com/paulgp/claude-container) | Safe sandboxing for autonomous Claude Code runs |
-| Deliberate thinking MCP | [paulgp/deliberate-thinking](https://github.com/paulgp/deliberate-thinking) | Structured sequential reasoning |
-| NBER RAG database | [paulgp/nber-rag-db](https://github.com/paulgp/nber-rag-db) | Search NBER working papers from Claude Code |
-| Stata MCP server | [hanlulong/stata-mcp](https://github.com/hanlulong/stata-mcp) | Execute Stata directly from Claude Code |
-| Live usage widget | [hugosantanna/clu-widget](https://github.com/hugosantanna/clu-widget) | Terminal widget for Claude Code usage stats |
-
-### Educational Resources
-
-| Resource | Author |
-|----------|--------|
-| [Claude Code for Applied Economists](https://markusacademy.substack.com/p/claude-code-for-applied-economists) (7-episode video series) | Paul Goldsmith-Pinkham + Markus Brunnermeier |
-| [Getting Started with Claude Code](https://paulgp.substack.com/p/getting-started-with-claude-code) | Paul Goldsmith-Pinkham |
-| [Claude Code Changed How I Work](https://causalinf.substack.com/p/claude-code-changed-how-i-work-part) (6-part series) | Scott Cunningham |
-| [claude-code-my-workflow guide](https://psantanna.com/claude-code-my-workflow/) | Pedro Sant'Anna |
-| [AI for Professionals Who Don't Code](https://claudeblattman.com/) | Chris Blattman |
-
 ---
 
 ## Adapting for Your Field
+
+### Write your domain profile
+
+The domain profile is the highest-value customization. For your field, document:
+
+1. **Journals by tier** — where you'd submit and where your referees publish
+2. **Common datasets** — what data your field uses, access restrictions
+3. **Identification strategies** — the 4-6 designs your field uses most, with assumptions
+4. **Field conventions** — what referees expect (distributional analysis? welfare calculations? mechanism tests?)
+5. **Seminal references** — the 8-10 papers every referee knows
+6. **Referee concerns** — the predictable objections in your subfield
+
+### Add journal profiles
+
+Use the template at the bottom of `journal-profiles.md`:
+
+```markdown
+### [Journal Name] ([Abbreviation])
+**Focus:** [fields and topics]
+**Bar:** [what it takes to publish here]
+**Domain referee adjusts:** [what domain reviewers care about]
+**Methods referee adjusts:** [rigor expectations, preferred methods]
+**Typical concerns:** [common referee questions]
+```
 
 ### Build project knowledge
 
@@ -178,11 +190,46 @@ For each project, create `docs/knowledge/INDEX.md` with topic files:
 - `results.md` — findings and interpretation
 - `methods.md` — estimation choices and diagnostics
 - `data.md` — data sources, construction, limitations
-- `papers/` — structured notes on related papers
+- `papers/` — structured notes on related papers (created by `/review-paper`)
 
-### Start a lessons file
+---
 
-The `knowledge/lessons.md` file in this repo is our real lessons file. Yours will be different. Start it empty and add entries as you go — each one documents a specific bug, its root cause, the fix, and the generalizable lesson. After a few months of active use, this becomes one of the most valuable files in your setup.
+## Updating from Your Internal Setup
+
+If you maintain a private version of these files and periodically sync to this public repo:
+
+1. Copy the modified internal file to the repo directory
+2. Run the sensitivity check:
+   ```bash
+   # Check for internal paths, names, data references
+   grep -rn '/home/\|/shared/\|TransUnion\|\.dta\b\|\.sas7bdat' .claude/ knowledge/
+   ```
+3. Review the diff: `git diff`
+4. Commit and push
+
+---
+
+## Acknowledgments
+
+This setup was built incrementally over months of AI-assisted empirical research. It draws on ideas and code from the growing community of economists using Claude Code:
+
+- **[Pedro Sant'Anna](https://github.com/pedrohcgs/claude-code-my-workflow)** — The flagship Claude Code workflow template for economists. Pedro's repo (821+ stars) pioneered the hooks + agents + skills architecture that this setup builds on. The pre-compact/post-compact hooks for context preservation, the verify-reminder hook, and the log-reminder hook all originate from Pedro's work. The [guide on his website](https://psantanna.com/claude-code-my-workflow/) is the best starting point for any economist new to Claude Code.
+
+- **[Hugo Sant'Anna](https://github.com/hugosantanna/clo-author)** — Clo-Author reoriented Pedro's template for empirical paper writing, with worker-critic agent pairs, 30 journal profiles, and a strategy memo workflow. Hugo's approach to file protection hooks and the post-merge session report reminder influenced this setup.
+
+- **[Scott Cunningham](https://github.com/scunning1975/MixtapeTools)** — MixtapeTools introduced creative skill designs, including the "fletcher" defamiliarization audit and the "referee2" independent 5-audit protocol. Scott's [6-part Substack series](https://causalinf.substack.com/p/claude-code-changed-how-i-work-part) on Claude Code is essential reading.
+
+- **[Chris Blattman](https://github.com/chrisblattman/claudeblattman)** — ClaudeBlattman demonstrated how to organize 14+ skills across multiple research workflow categories (analysis, data, theory, writing, communication, literature, ideation). The breadth of coverage influenced the skill design here. See [claudeblattman.com](https://claudeblattman.com/) for his approach.
+
+- **[Paul Goldsmith-Pinkham](https://github.com/paulgp)** — Docker containers for YOLO mode, the deliberate-thinking MCP server, and the NBER RAG database. Paul's [Substack posts](https://paulgp.substack.com/p/getting-started-with-claude-code) and [video series with Markus Brunnermeier](https://markusacademy.substack.com/p/claude-code-for-applied-economists) are the other major educational entry point alongside Scott's.
+
+- **[Claes Backman](https://github.com/claesbackman/AI-research-feedback)** — The parallel-agent paper review skill (6 agents for comprehensive review) influenced the blind parallel referee design used here.
+
+- **[Zirui Song](https://github.com/zirui-song/claude-skills)** — The `/robustness` skill (DiD + IV specific) and `/lit-review` skill demonstrated field-specific skill design.
+
+- **[Michael Ewens](https://gist.github.com/michaelewens/)** — The log-reminder hook pattern (credited by Pedro Sant'Anna) that ensures session documentation.
+
+A broader directory of economist Claude Code resources is maintained at [`~/claude-knowledge/economist_claude_code_repos.md`](knowledge/) in this repo's knowledge directory.
 
 ---
 
