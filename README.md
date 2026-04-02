@@ -28,8 +28,6 @@ Three principles guide this setup:
 
 2. **Knowledge management.** Every fact lives in exactly one place. Three layers: behavioral guardrails (`CLAUDE.md`), knowledge repositories (`docs/knowledge/`), and session memory (`MEMORY.md`). No information scatter.
 
-3. **Field calibration.** Generic AI assistants don't know your field's conventions. The domain profile and journal profiles teach Claude what referees in your subfield actually care about.
-
 ---
 
 ## Quick Start
@@ -48,56 +46,13 @@ cp -r .claude/* ~/.claude/
 cp -r knowledge/* ~/claude-knowledge/
 ```
 
-### 2. Customize for your field
-
-The domain profile (`~/.claude/rules/domain-profile.md`) is a worked example for consumer finance/banking. **Copy it and adapt for your field:**
-
-- Replace the datasets table with your field's common data sources
-- Replace the identification strategies with those used in your subfield
-- Replace the seminal references
-- Replace the field-specific referee concerns
-
-The journal profiles (`~/.claude/rules/journal-profiles.md`) cover 14 applied economics journals. Add your target journals using the template at the bottom of the file.
-
-### 3. Set up a project
+### 2. Set up a project
 
 Create a project-level `CLAUDE.md` in your project directory. See `examples/project-CLAUDE.md` for a template.
-
-### 4. Try a review
-
-```
-/review-draft --peer AEJ:Applied
-```
-
-This launches the domain referee and methods referee in parallel, both calibrated to AEJ:Applied's standards. They run blind — neither sees the other's report.
 
 ---
 
 ## Components
-
-### Referee Agents
-
-Three agents in `.claude/agents/`:
-
-| Agent | Role | Reads |
-|-------|------|-------|
-| `domain-referee` | Literature, contribution, external validity, journal fit | domain-profile.md, journal-profiles.md |
-| `methods-referee` | Identification, estimation, inference, robustness | methods_library.md, lessons.md, domain-profile.md |
-| `coder-critic` | Code audit: design drift, verification, conventions | conventions.md, lessons.md, stata_patterns.md |
-
-All three produce severity-ranked issue lists (Critical / Important / Minor), not numeric scores. The domain and methods referees are blind to each other.
-
-### Journal Profiles
-
-14 journals with calibrated referee behavior:
-
-| Tier | Journals |
-|------|----------|
-| Top-5 | AER, JPE, QJE, REStud, Econometrica |
-| Top field | AEJ:Applied, AEJ:Policy, JHR, RAND, JPubE, JME, JFI |
-| Strong field / specialty | JBF, JFSR, JUE, RESTAT, JCA |
-
-Each profile specifies: focus, bar, how domain and methods referees should adjust, and typical referee concerns. When you run `/review-draft --peer JHR`, the referees calibrate to JHR's expectations.
 
 ### Hooks
 
@@ -154,32 +109,6 @@ The `MEMORY.md` file is an index — one line per entry, under 150 characters. E
 The **mandatory pre-action feedback review** is the enforcement mechanism: before any non-read action, Claude must verify that no feedback memory is violated. This costs ~200 tokens per check — trivial compared to the 5,000–15,000 tokens a preventable error costs in rework.
 
 ---
-
-## Adapting for Your Field
-
-### Write your domain profile
-
-The domain profile is the highest-value customization. For your field, document:
-
-1. **Journals by tier** — where you'd submit and where your referees publish
-2. **Common datasets** — what data your field uses, access restrictions
-3. **Identification strategies** — the 4-6 designs your field uses most, with assumptions
-4. **Field conventions** — what referees expect (distributional analysis? welfare calculations? mechanism tests?)
-5. **Seminal references** — the 8-10 papers every referee knows
-6. **Referee concerns** — the predictable objections in your subfield
-
-### Add journal profiles
-
-Use the template at the bottom of `journal-profiles.md`:
-
-```markdown
-### [Journal Name] ([Abbreviation])
-**Focus:** [fields and topics]
-**Bar:** [what it takes to publish here]
-**Domain referee adjusts:** [what domain reviewers care about]
-**Methods referee adjusts:** [rigor expectations, preferred methods]
-**Typical concerns:** [common referee questions]
-```
 
 ### Build project knowledge
 
